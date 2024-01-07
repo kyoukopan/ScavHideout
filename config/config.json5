@@ -1,0 +1,11 @@
+// Main config file. If you update this, update ./types.ts > ScavHideoutConfig
+
+{
+  traderDescription: "Throughout the Norvinsk region, more enterprising scav groups have established \"neutral\" hideouts to facilitate trade, services, and some semblance of community. Though they'll kill PMCs for their gear without qualm outside, hideouts will do business with PMCs - money is still money, after all.",
+  insurance: {
+    /** To enable/disable insurance, change return timeframe, or excluded categories, 
+    edit trader base.json */
+    insuranceMultiplier: 0.12, // Cost of insurance - higher is more expensive
+    returnChancePercent: 69,
+  },
+}

@@ -1,0 +1,18 @@
+{
+  "ScavHideout insuranceStart 0": "heard u lost ur gear. as agreed, we will send out some guys n try to bring it back",
+  "ScavHideout insuranceStart 1": "had a rough time eh? or maybe u ditched ur gear? whatever, ill go out w my mates to look for it",
+  "ScavHideout insuranceStart 2": "got ur gear retrieval request. after i finish this herring im heading out there anyways, will look for ur stuff",
+  "ScavHideout insuranceFound 0": "the guys who went to find ur crap just got back. pleasure doing business mate",
+  "ScavHideout insuranceFound 1": "got ur stuff took a buillet to th fkn leg w while findin it idk if im gna make it lpst so much blooid",
+  "ScavHideout insuranceFound 2": "group just got back w the stuff u asked us to retrieve. funnily enough one of em tried to make off with something but we sorted him out nicely lol. anyways here u go",
+  "ScavHideout insuranceFailed 0": "bad news, the guys who went out to get ur stuff didnt make it back. some hothead usec dusted them all. RIP brothers",
+  "ScavHideout insuranceFailed 1": "hey mate, ur not gonna like this. some of the guys who went to get ur gear got greedy and made off w it... the ones who tried to stop em barely got out alive. sorry mate",
+  "ScavHideout insuranceFailed 2": "me and my mates looked everywhere for ur stuff, not a trace. better luck next time",
+  "ScavHideout insuranceFailedLabs 0": "can't retrieve ur gear u lost in the labs, just not possible",
+  "ScavHideout insuranceFailedLabs 1": "the gear u ditched in the labs can't be retrieved, my guys can't get anywhere near there",
+  "ScavHideout insuranceFailedLabs 2": "some hot shots thought theyd try to prove themselves by trying to retrieve ur stuff from the labs, even tho we told em labs aint part of the retrieval guarantee. needless to say they never made it back",
+  "ScavHideout insuranceExpired 0": "held on to ur gear as long as we could, but since u didn't accept it in the agreed upon time we're claiming it for ourselves. thanks for ur contribution",
+  "ScavHideout insuranceExpired 1": "as u know we can only babysit ur stuff for a certain amt of time. next time, grab it earlier. pleasure doing business mate",
+  "ScavHideout insuranceExpired 2": "if u can't pick up ur gear in time, it's ours. try to keep that in mind next time. not that i mind - we can always use more \"donations\"",
+  "ScavHideout insuranceComplete 0": "there's ur stuff. try not to lose it again"
+}

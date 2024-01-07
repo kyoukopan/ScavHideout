@@ -1,0 +1,30 @@
+{
+	"insuranceStart": [
+		"ScavHideout insuranceStart 0",
+		"ScavHideout insuranceStart 1",
+		"ScavHideout insuranceStart 2"
+	],
+	"insuranceFound": [
+		"ScavHideout insuranceFound 0",
+		"ScavHideout insuranceFound 1",
+		"ScavHideout insuranceFound 2"
+	],
+	"insuranceFailed": [
+		"ScavHideout insuranceFailed 0",
+		"ScavHideout insuranceFailed 1",
+		"ScavHideout insuranceFailed 2"
+	],
+	"insuranceFailedLabs": [
+		"ScavHideout insuranceFailedLabs 0",
+		"ScavHideout insuranceFailedLabs 1",
+		"ScavHideout insuranceFailedLabs 2"
+	],
+	"insuranceExpired": [
+		"ScavHideout insuranceExpired 0",
+		"ScavHideout insuranceExpired 1",
+		"ScavHideout insuranceExpired 2"
+	],
+	"insuranceComplete": [
+		"ScavHideout insuranceComplete 0"
+	]
+}

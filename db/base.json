@@ -1,0 +1,122 @@
+{
+  "_id": "ScavHideout",
+  "working": true,
+  "availableInRaid": false,
+  "items_buy": {
+    "id_list": [],
+    "category": [
+      "5448eb774bdc2d0a728b4567",
+      "5422acb9af1c889c16000029",
+      "5661632d4bdc2d903d8b456b",
+      "5447e0e74bdc2d3c308b4567",
+      "543be5664bdc2dd4348b4569",
+      "5448e5284bdc2dcb718b4567",
+      "5448e53e4bdc2d60728b4567",
+      "5448fe124bdc2da5018b4567",
+      "543be5f84bdc2dd4348b456a",
+      "543be6674bdc2df1348b4569",
+      "567849dd4bdc2d150f8b456e",
+      "543be6564bdc2df4348b4568",
+      "5447e1d04bdc2dff2f8b4567",
+      "5448ecbe4bdc2d60728b4568",
+      "616eb7aea207f41933308f46"
+    ]
+  },
+  "items_buy_prohibited": {
+    "id_list": [
+      "5449016a4bdc2d6f028b456f",
+      "5696686a4bdc2da3298b456a",
+      "569668774bdc2da2298b4568"
+    ],
+    "category": []
+  },
+  "customization_seller": false,
+  "name": "Scav Hideout",
+  "surname": "Scav Hideout",
+  "nickname": "Scav Hideout",
+  "location": "Scattered throughout the region.",
+  "avatar": "/files/trader/avatar/ScavHideout.jpg",
+  "balance_rub": 7000000,
+  "balance_dol": 0,
+  "balance_eur": 0,
+  "unlockedByDefault": true,
+  "discount": 0,
+  "discount_end": 0,
+  "buyer_up": true,
+  "currency": "RUB",
+  "nextResupply": 1615141448,
+  "medic": false,
+  "repair": {
+    "availability": true,
+    "quality": 1.6,
+    "excluded_id_list": [],
+    "excluded_category": [],
+    "currency": "5449016a4bdc2d6f028b456f",
+    "currency_coefficient": 1,
+    "price_rate": 0
+  },
+  "insurance": {
+    "availability": true,
+    "min_payment": 0,
+    "min_return_hour": 0,
+    "max_return_hour": 0,
+    "max_storage_time": 1,
+    "excluded_category": ["62e9103049c018f425059f38"]
+  },
+  "gridHeight": 160,
+  "loyaltyLevels": [
+    {
+      "buy_price_coef": 55,
+      "exchange_price_coef": 0,
+      "heal_price_coef": 0,
+      "insurance_price_coef": 13,
+      "minLevel": 1,
+      "minSalesSum": 0,
+      "minStanding": 0,
+      "repair_price_coef": 50
+    },
+    {
+      "buy_price_coef": 55,
+      "exchange_price_coef": 0,
+      "heal_price_coef": 0,
+      "insurance_price_coef": 14,
+      "minLevel": 15,
+      "minSalesSum": 750000,
+      "minStanding": 0.2,
+      "repair_price_coef": 60
+    },
+    {
+      "buy_price_coef": 55,
+      "exchange_price_coef": 0,
+      "heal_price_coef": 0,
+      "insurance_price_coef": 15,
+      "minLevel": 26,
+      "minSalesSum": 1500000,
+      "minStanding": 0.35,
+      "repair_price_coef": 65
+    },
+    {
+      "buy_price_coef": 55,
+      "exchange_price_coef": 0,
+      "heal_price_coef": 0,
+      "insurance_price_coef": 16,
+      "minLevel": 36,
+      "minSalesSum": 2300000,
+      "minStanding": 0.5,
+      "repair_price_coef": 70
+    }
+  ],
+  "sell_category": [
+    "5b47574386f77428ca22b33e",
+    "5b47574386f77428ca22b33f",
+    "5b5f78dc86f77409407a7f8e",
+    "5b5f71a686f77447ed5636ab",
+    "5b47574386f77428ca22b346",
+    "5b47574386f77428ca22b340",
+    "5b47574386f77428ca22b344",
+    "5b47574386f77428ca22b342",
+    "5b47574386f77428ca22b341",
+    "5b47574386f77428ca22b343",
+    "5b4391a586f7745321235ab2"
+  ]
+}
