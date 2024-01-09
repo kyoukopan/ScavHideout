@@ -10,6 +10,18 @@ import { IDatabaseTables } from "@spt-aki/models/spt/server/IDatabaseTables";
 import { ImageRouter } from "@spt-aki/routers/ImageRouter";
 import { ConfigServer } from "@spt-aki/servers/ConfigServer";
 import { JsonUtil } from "@spt-aki/utils/JsonUtil";
+import { TraderAssortService } from "@spt-aki/services/TraderAssortService";
+import { ScavHideoutConfig } from "./types";
+import { BotWeaponGenerator } from "@spt-aki/generators/BotWeaponGenerator";
+import { EquipmentSlots } from "@spt-aki/models/enums/EquipmentSlots";
+import { BotHelper } from "@spt-aki/helpers/BotHelper";
+import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
+import { ItemHelper } from "@spt-aki/helpers/ItemHelper";
+import { Money } from "@spt-aki/models/enums/Money";
+import assort from "../db/assort.json";
+import { FluentAssortConstructor } from "./fluentTraderAssortCreator";
+import { Ammo12Gauge, Ammo20Gauge, Ammo545x39, Ammo556x45, Ammo762x39, Ammo9x18, Ammo9x19 } from "@spt-aki/models/enums/AmmoTypes";
+import { randomInt } from "crypto";
 
 export class TraderHelper
 {
@@ -52,7 +64,16 @@ export class TraderHelper
      * @param jsonUtil json utility class
      */
     // rome-ignore lint/suspicious/noExplicitAny: traderDetailsToAdd comes from base.json, so no type
-    public addTraderToDb(traderDetailsToAdd: any, tables: IDatabaseTables, jsonUtil: JsonUtil): void
+    public addTraderToDb(
+        traderDetailsToAdd: any, 
+        tables: IDatabaseTables, 
+        jsonUtil: JsonUtil, 
+        modConfig: ScavHideoutConfig, 
+        botHelper: BotHelper, 
+        botWeaponGenerator: BotWeaponGenerator, 
+        itemHelper: ItemHelper, 
+        fluentTraderAssortHeper: FluentAssortConstructor
+    ): void
     {
         // Add trader to trader table, key is the traders id
         tables.traders[traderDetailsToAdd._id] = {
@@ -65,6 +86,43 @@ export class TraderHelper
             }, // questassort is empty as trader has no assorts unlocked by quests
             dialogue: dialogueJson
         };
+        this.generateWeaponsAndAddToAssort(tables.traders[traderDetailsToAdd._id].assort, modConfig, botHelper, jsonUtil, botWeaponGenerator, itemHelper);
+
+        const looseAmmo = [
+            Ammo12Gauge.BUCKSHOT_7MM,
+            Ammo12Gauge.BMG_SLUG_50CAL,
+            Ammo20Gauge.BUCKSHOT_75MM, 
+            Ammo20Gauge.POLEVA_3_SLUG,
+            Ammo9x19.PSO_GZH,
+            Ammo556x45.MK255_MOD_0_RRLP,
+        ]
+
+        const boxAmmo = [
+            "5737273924597765dd374461", // 9x18 PSO gzh x16
+            "57372e4a24597768553071c2", // 5.45x39 PRS gs x30
+            "64acea2c03378853630da53e" // 7.62x39 HP x20
+        ]
+
+        for (const ammo of looseAmmo)
+        {
+            const roll = randomInt(1, 5);
+            const count = roll <= 3 ? randomInt(60, 121) : randomInt(30, 61);
+            fluentTraderAssortHeper.createSingleAssortItem(ammo)
+                .addStackCount(count)
+                .addMoneyCost(Money.ROUBLES, itemHelper.getItemPrice(ammo))
+                .addLoyaltyLevel(1)
+                .export(tables.traders[traderDetailsToAdd._id]);
+        }
+        
+        for (const box of boxAmmo)
+        {
+            const count = randomInt(2, 6);
+            fluentTraderAssortHeper.createSingleAssortItem(box)
+                .addStackCount(count)
+                .addMoneyCost(Money.ROUBLES, itemHelper.getItemPrice(box))
+                .addLoyaltyLevel(1)
+                .export(tables.traders[traderDetailsToAdd._id]);
+        }
     }
 
     /**
@@ -93,6 +151,61 @@ export class TraderHelper
         delete insuranceConfig.returnChancePercent[traderId];
     }
 
+    public generateWeaponsAndAddToAssort(
+        assort: ITraderAssort, 
+        modConfig: ScavHideoutConfig, 
+        botHelper: BotHelper, 
+        jsonUtil: JsonUtil, 
+        botWeaponGenerator: BotWeaponGenerator,
+        itemHelper: ItemHelper
+    ): void
+    {
+        // Generate scav weapons
+        const { primaryCount } = modConfig.assort.weapons;
+        const scavJsonTemplate = jsonUtil.clone(botHelper.getBotTemplate("assault"));
+        scavJsonTemplate.inventory.mods = {};
+        for (let i = 0; i < primaryCount; i++)
+        {
+            const randWpnTpl = botWeaponGenerator.pickWeightedWeaponTplFromPool(EquipmentSlots.FIRST_PRIMARY_WEAPON, scavJsonTemplate.inventory);
+            const generatedWpn = botWeaponGenerator.generateWeaponByTpl(
+                null,
+                randWpnTpl,
+                "hideout",
+                scavJsonTemplate.inventory,
+                "hideout",
+                scavJsonTemplate.chances.mods,
+                "assault",
+                false,
+                1
+            )
+
+            let wpnId: string;
+            let price: number;
+            // Set count & add to item assort
+            for (const item of generatedWpn.weapon)
+            {
+                if (item._tpl === randWpnTpl) // Weapon base item
+                {
+                    wpnId = item._id;
+                    item.upd.StackObjectsCount = 1;
+                    item.upd.UnlimitedCount = false;
+                    price = itemHelper.getItemPrice(item._tpl);
+                    const qualityModifier = itemHelper.getItemQualityModifier(item);
+                    price *= qualityModifier;
+                }
+                assort.items.push(item);
+            }
+
+            // Add price to barter assort
+            assort.barter_scheme[wpnId] = [[{ _tpl: Money.ROUBLES, count: price }]];
+            
+            // Assign LL
+            assort.loyal_level_items[wpnId] = 1;
+
+            console.log(generatedWpn.weapon, assort.barter_scheme[generatedWpn.weaponTemplate._id])
+        }
+    }
+
     /**
      * Create basic data for trader + add empty assorts table for trader
      * @param tables SPT db
@@ -101,15 +214,7 @@ export class TraderHelper
      */
     private createAssortTable(): ITraderAssort
     {
-        // Create a blank assort object, ready to have items added
-        const assortTable: ITraderAssort = {
-            nextResupply: 0,
-            items: [],
-            barter_scheme: {},
-            loyal_level_items: {}
-        }
-
-        return assortTable;
+        return { ...assort, nextResupply: 0 };
     }
 
     /**
@@ -186,11 +291,6 @@ export class TraderHelper
         return glock;
     }
 
-    public addTraderDialogueFile()
-    {
-
-    }
-
     /**
      * Add traders name/location/description to the locale table
      * @param baseJson json file for trader (db/base.json)
@@ -217,5 +317,89 @@ export class TraderHelper
                 locale[key] = str;
             })
         }  
+    }
+
+    public extendGetPristineTraderAssort(
+        thisTraderId: string, 
+        defaultService: TraderAssortService, 
+        modConfig: ScavHideoutConfig,
+        botWeaponGenerator: BotWeaponGenerator,
+        jsonUtil: JsonUtil,
+        botHelper: BotHelper,
+        logger: ILogger
+    ): TraderAssortService["getPristineTraderAssort"]
+    {
+        return (traderId: string) =>
+        {
+            if (traderId !== thisTraderId) // Use existing registered logic for other traders
+            {
+                return defaultService.getPristineTraderAssort(traderId);
+            }
+            else
+            {
+                // Get non-generated assort
+                const assort = { ...defaultService.getPristineTraderAssort(traderId) };
+                
+                // Generate scav weapons
+                const { primaryCount, pistolCount } = modConfig.assort.weapons;
+                const scavJsonTemplate = jsonUtil.clone(  botHelper.getBotTemplate("assault"));
+                scavJsonTemplate.inventory.mods = {}; // Don't generate mods
+                const templateInventory = scavJsonTemplate.inventory;
+
+                for (let i = 0; i < primaryCount; i++)
+                {
+                    const randWpnTpl = botWeaponGenerator.pickWeightedWeaponTplFromPool(EquipmentSlots.FIRST_PRIMARY_WEAPON, templateInventory);
+                    const generatedWpn = botWeaponGenerator.generateWeaponByTpl(
+                        null,
+                        randWpnTpl,
+                        "hideout",
+                        templateInventory,
+                        "hideout",
+                        {
+                            /* eslint-disable @typescript-eslint/naming-convention */
+                            mod_charge: 0,
+                            mod_equipment: 0,
+                            mod_equipment_000: 0,
+                            mod_equipment_001: 0,
+                            mod_equipment_002: 0,
+                            mod_flashlight: 0,
+                            mod_foregrip: 0,
+                            mod_launcher: 0,
+                            mod_magazine: 0,
+                            mod_mount: 0,
+                            mod_mount_000: 0,
+                            mod_mount_001: 0,
+                            mod_muzzle: 0,
+                            mod_nvg: 0,
+                            mod_pistol_grip: 0,
+                            mod_reciever: 0,
+                            mod_scope: 0,
+                            mod_scope_000: 0,
+                            mod_scope_001: 0,
+                            mod_scope_002: 0,
+                            mod_scope_003: 0,
+                            mod_sight_front: 0,
+                            mod_sight_rear: 0,
+                            mod_stock: 0,
+                            mod_stock_000: 0,
+                            mod_stock_akms: 0,
+                            mod_tactical: 0,
+                            mod_tactical_000: 0,
+                            mod_tactical_001: 0,
+                            mod_tactical_002: 0,
+                            mod_tactical_003: 0,
+                            mod_handguard: 0
+                            /* eslint-enable @typescript-eslint/naming-convention */
+                        } ,
+                        "assault",
+                        false,
+                        1
+                    )
+                    assort.items.push(generatedWpn.weapon[0]);
+                }
+
+                return assort;
+            }
+        }
     }
 }

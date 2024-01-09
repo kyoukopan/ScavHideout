@@ -26,6 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const tsyringe_1 = require("C:/snapshot/project/node_modules/tsyringe");
 const json5_1 = __importDefault(require("C:/snapshot/project/node_modules/json5"));
 const path_1 = __importDefault(require("path"));
 const ConfigTypes_1 = require("C:/snapshot/project/obj/models/enums/ConfigTypes");
@@ -33,14 +34,14 @@ const ConfigTypes_1 = require("C:/snapshot/project/obj/models/enums/ConfigTypes"
 const baseJson = __importStar(require("../db/base.json"));
 const traderHelpers_1 = require("./traderHelpers");
 const fluentTraderAssortCreator_1 = require("./fluentTraderAssortCreator");
-const Money_1 = require("C:/snapshot/project/obj/models/enums/Money");
 const Traders_1 = require("C:/snapshot/project/obj/models/enums/Traders");
 const fs_1 = require("fs");
+const CustomTraderAssortService_1 = require("./CustomTraderAssortService");
 // Global trader ID, defined in base.json
 const traderId = baseJson._id;
 const configJson5 = (0, fs_1.readFileSync)(path_1.default.resolve(__dirname, "../config/config.json5"), { encoding: "utf-8" });
 const modConfig = json5_1.default.parse(configJson5);
-class SampleTrader {
+class ScavHideoutMod {
     mod;
     logger;
     traderHelper;
@@ -67,12 +68,13 @@ class SampleTrader {
         this.traderHelper = new traderHelpers_1.TraderHelper();
         this.fluentTraderAssortHeper = new fluentTraderAssortCreator_1.FluentAssortConstructor(hashUtil, this.logger);
         this.traderHelper.registerProfileImage(baseJson, this.mod, preAkiModLoader, imageRouter, "ScavHideout.jpg");
-        this.traderHelper.setTraderUpdateTime(traderConfig, baseJson, 3600);
+        this.traderHelper.setTraderUpdateTime(traderConfig, baseJson, modConfig.refreshTimeSeconds);
         // Add trader to trader enum
         Traders_1.Traders[traderId] = traderId;
         // Add trader to flea market
         ragfairConfig.traders[traderId] = false;
         this.logger.debug(`[${this.mod}] preAki Loaded`);
+        const onLoadModService = container.resolve("OnLoadModService");
     }
     /**
      * Majority of trader-related work occurs after the aki database has been loaded but prior to SPT code being run
@@ -84,10 +86,26 @@ class SampleTrader {
         const databaseServer = container.resolve("DatabaseServer");
         const configServer = container.resolve("ConfigServer");
         const jsonUtil = container.resolve("JsonUtil");
+        const botHelper = container.resolve("BotHelper");
+        const botWeaponGenerator = container.resolve("BotWeaponGenerator");
+        const itemHelper = container.resolve("ItemHelper");
         // Get a reference to the database tables
         const tables = databaseServer.getTables();
-        // Add new trader to the trader dictionary in DatabaseServer - has no assorts (items) yet
-        this.traderHelper.addTraderToDb(baseJson, tables, jsonUtil);
+        // Add new trader to the trader dictionary in DatabaseServer w/ assort
+        this.traderHelper.addTraderToDb(baseJson, tables, jsonUtil, modConfig, botHelper, botWeaponGenerator, itemHelper, this.fluentTraderAssortHeper);
+        this.logger.debug(`[${this.mod}] registering custom getPristineTraderAssort for trader refresh logic...`);
+        const defaultTraderAssortService = container.resolve("TraderAssortService");
+        container.register("CustomTraderAssortService", CustomTraderAssortService_1.CustomTraderAssortService, { lifecycle: tsyringe_1.Lifecycle.Singleton });
+        const customTraderAssortService = container.resolve("CustomTraderAssortService");
+        for (const trader of Object.values(Traders_1.Traders)) {
+            const assort = defaultTraderAssortService.getPristineTraderAssort(trader);
+            if (trader) {
+                customTraderAssortService.setPristineTraderAssort(trader, assort);
+            }
+            customTraderAssortService.setModConfig(modConfig);
+        }
+        container.register("TraderAssortService", { useToken: "CustomTraderAssortService" });
+        this.logger.debug(`[${this.mod}] registered custom getPristineTraderAssort`);
         // Add new trader's insurance details to insurance config
         if (baseJson.insurance.availability) {
             this.traderHelper.addTraderInsuranceConfig({
@@ -99,42 +117,11 @@ class SampleTrader {
         else {
             this.traderHelper.resetTraderInsuranceConfig(traderId, configServer);
         }
-        // Add milk
-        const MILK_ID = "575146b724597720a27126d5"; // Can find item ids in `database\templates\items.json` or with https://db.sp-tarkov.com/search
-        this.fluentTraderAssortHeper.createSingleAssortItem(MILK_ID)
-            .addStackCount(200)
-            .addBuyRestriction(10)
-            .addMoneyCost(Money_1.Money.ROUBLES, 2000)
-            .addLoyaltyLevel(1)
-            .export(tables.traders[traderId]);
-        // Add 3x bitcoin + salewa for milk barter
-        const BITCOIN_ID = "59faff1d86f7746c51718c9c";
-        const SALEWA_ID = "544fb45d4bdc2dee738b4568";
-        this.fluentTraderAssortHeper.createSingleAssortItem(MILK_ID)
-            .addStackCount(100)
-            .addBarterCost(BITCOIN_ID, 3)
-            .addBarterCost(SALEWA_ID, 1)
-            .addLoyaltyLevel(1)
-            .export(tables.traders[traderId]);
-        // Add glock as money purchase
-        this.fluentTraderAssortHeper.createComplexAssortItem(this.traderHelper.createGlock())
-            .addUnlimitedStackCount()
-            .addMoneyCost(Money_1.Money.ROUBLES, 20000)
-            .addBuyRestriction(3)
-            .addLoyaltyLevel(1)
-            .export(tables.traders[traderId]);
-        // Add mp133 preset as mayo barter
-        this.fluentTraderAssortHeper.createComplexAssortItem(tables.globals.ItemPresets["584148f2245977598f1ad387"]._items)
-            .addStackCount(200)
-            .addBarterCost("5bc9b156d4351e00367fbce9", 1)
-            .addBuyRestriction(3)
-            .addLoyaltyLevel(1)
-            .export(tables.traders[traderId]);
         // Add trader to locale file, ensures trader text shows properly on screen
         // WARNING: adds the same text to ALL locales (e.g. chinese/french/english)
         this.traderHelper.addTraderToLocales(baseJson, tables, modConfig.traderDescription, jsonUtil);
         this.logger.debug(`[${this.mod}] postDb Loaded`);
     }
 }
-module.exports = { mod: new SampleTrader() };
+module.exports = { mod: new ScavHideoutMod() };
 //# sourceMappingURL=mod.js.map

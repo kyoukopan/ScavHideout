@@ -5,7 +5,14 @@
   insurance: {
     /** To enable/disable insurance, change return timeframe, or excluded categories, 
     edit trader base.json */
-    insuranceMultiplier: 0.12, // Cost of insurance - higher is more expensive
-    returnChancePercent: 69,
+    insuranceMultiplier: 0.12, // Determines base cost of insurance: Item price * insurance multiplier = base cost
+    returnChancePercent: 69, // Chance for an insured item to come back
   },
+  refreshTimeSeconds: 15, // Trader refresh time
+  /** Trader stock settings. Weapons and armor are randomly generated from scav loot. */
+  assort: {
+    weapons: {
+      primaryCount: 3, // Amount of primary weapons to generate
+    }
+  }
 }
