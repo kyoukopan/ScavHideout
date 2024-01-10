@@ -7,9 +7,15 @@ class FluentAssortConstructor {
     loyaltyLevel = {};
     hashUtil;
     logger;
-    constructor(hashutil, logger) {
+    durabilityLimitsHelper;
+    itemHelper;
+    modConfig;
+    constructor(hashutil, logger, durabilityLimitsHelper, itemHelper, modConfig) {
         this.hashUtil = hashutil;
         this.logger = logger;
+        this.durabilityLimitsHelper = durabilityLimitsHelper;
+        this.itemHelper = itemHelper;
+        this.modConfig = modConfig;
     }
     /**
      * Start selling item with tpl
@@ -42,6 +48,19 @@ class FluentAssortConstructor {
         this.itemsToSell.push(...items);
         return this;
     }
+    setWeaponDurability() {
+        const max = this.durabilityLimitsHelper.getRandomizedMaxWeaponDurability(undefined, "follower");
+        const current = this.durabilityLimitsHelper.getRandomizedWeaponDurability(undefined, "follower", max);
+        this.itemsToSell[0].upd.Repairable = { MaxDurability: max, Durability: current };
+        return this;
+    }
+    setArmorDurability() {
+        const template = this.itemHelper.getItem(this.itemsToSell[0]._tpl)[1];
+        const max = this.durabilityLimitsHelper.getRandomizedMaxArmorDurability(template, "follower");
+        const current = this.durabilityLimitsHelper.getRandomizedArmorDurability(template, "follower", max);
+        this.itemsToSell[0].upd.Repairable = { MaxDurability: max, Durability: current };
+        return this;
+    }
     addStackCount(stackCount) {
         this.itemsToSell[0].upd.StackObjectsCount = stackCount;
         return this;
@@ -68,7 +87,7 @@ class FluentAssortConstructor {
         this.barterScheme[this.itemsToSell[0]._id] = [
             [
                 {
-                    count: amount,
+                    count: amount * this.modConfig.traderStockPriceMultiplier,
                     _tpl: currencyType
                 }
             ]

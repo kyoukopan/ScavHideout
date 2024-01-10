@@ -1,8 +1,11 @@
+import { DurabilityLimitsHelper } from "@spt-aki/helpers/DurabilityLimitsHelper";
+import { ItemHelper } from "@spt-aki/helpers/ItemHelper";
 import { Item } from "@spt-aki/models/eft/common/tables/IItem";
 import { IBarterScheme, ITrader } from "@spt-aki/models/eft/common/tables/ITrader";
 import { Money } from "@spt-aki/models/enums/Money";
 import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
+import { ScavHideoutConfig } from "./types";
 
 export class FluentAssortConstructor
 {
@@ -11,11 +14,17 @@ export class FluentAssortConstructor
     protected loyaltyLevel: Record<string, number> = {};
     protected hashUtil: HashUtil;
     protected logger: ILogger;
+    protected durabilityLimitsHelper: DurabilityLimitsHelper;
+    protected itemHelper: ItemHelper;
+    protected modConfig: ScavHideoutConfig;
 
-    constructor(hashutil: HashUtil, logger: ILogger)
+    constructor(hashutil: HashUtil, logger: ILogger, durabilityLimitsHelper: DurabilityLimitsHelper, itemHelper: ItemHelper, modConfig: ScavHideoutConfig)
     {
         this.hashUtil = hashutil
         this.logger = logger;
+        this.durabilityLimitsHelper = durabilityLimitsHelper;
+        this.itemHelper = itemHelper;
+        this.modConfig = modConfig;
     }
     
     /**
@@ -56,6 +65,25 @@ export class FluentAssortConstructor
         items[0].upd.StackObjectsCount = 100;
 
         this.itemsToSell.push(...items);
+
+        return this;
+    }
+
+    public setWeaponDurability(): FluentAssortConstructor
+    {
+        const max = this.durabilityLimitsHelper.getRandomizedMaxWeaponDurability(undefined, "follower");
+        const current = this.durabilityLimitsHelper.getRandomizedWeaponDurability(undefined, "follower", max);
+        this.itemsToSell[0].upd.Repairable = { MaxDurability: max, Durability: current };
+
+        return this;
+    }
+
+    public setArmorDurability(): FluentAssortConstructor
+    {
+        const template = this.itemHelper.getItem(this.itemsToSell[0]._tpl)[1];
+        const max = this.durabilityLimitsHelper.getRandomizedMaxArmorDurability(template, "follower");
+        const current = this.durabilityLimitsHelper.getRandomizedArmorDurability(template, "follower", max);
+        this.itemsToSell[0].upd.Repairable = { MaxDurability: max, Durability: current };
 
         return this;
     }
@@ -102,7 +130,7 @@ export class FluentAssortConstructor
         this.barterScheme[this.itemsToSell[0]._id] = [
             [
                 {
-                    count: amount,
+                    count: amount * this.modConfig.traderStockPriceMultiplier,
                     _tpl: currencyType
                 }
             ]

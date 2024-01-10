@@ -7,10 +7,10 @@ exports.TraderHelper = void 0;
 const dialogue_json_1 = __importDefault(require("../db/dialogue.json"));
 const en_json_1 = __importDefault(require("../db/locales/global/en.json"));
 const ConfigTypes_1 = require("C:/snapshot/project/obj/models/enums/ConfigTypes");
-const EquipmentSlots_1 = require("C:/snapshot/project/obj/models/enums/EquipmentSlots");
 const Money_1 = require("C:/snapshot/project/obj/models/enums/Money");
 const assort_json_1 = __importDefault(require("../db/assort.json"));
 const AmmoTypes_1 = require("C:/snapshot/project/obj/models/enums/AmmoTypes");
+const WeaponTypes_1 = require("C:/snapshot/project/obj/models/enums/WeaponTypes");
 const crypto_1 = require("crypto");
 class TraderHelper {
     /**
@@ -47,7 +47,7 @@ class TraderHelper {
      * @param jsonUtil json utility class
      */
     // rome-ignore lint/suspicious/noExplicitAny: traderDetailsToAdd comes from base.json, so no type
-    addTraderToDb(traderDetailsToAdd, tables, jsonUtil, modConfig, botHelper, botWeaponGenerator, itemHelper, fluentTraderAssortHeper) {
+    addTraderToDb(traderDetailsToAdd, tables, jsonUtil, itemHelper, fluentTraderAssortHelper) {
         // Add trader to trader table, key is the traders id
         tables.traders[traderDetailsToAdd._id] = {
             assort: this.createAssortTable(),
@@ -59,7 +59,6 @@ class TraderHelper {
             },
             dialogue: dialogue_json_1.default
         };
-        this.generateWeaponsAndAddToAssort(tables.traders[traderDetailsToAdd._id].assort, modConfig, botHelper, jsonUtil, botWeaponGenerator, itemHelper);
         const looseAmmo = [
             AmmoTypes_1.Ammo12Gauge.BUCKSHOT_7MM,
             AmmoTypes_1.Ammo12Gauge.BMG_SLUG_50CAL,
@@ -67,16 +66,18 @@ class TraderHelper {
             AmmoTypes_1.Ammo20Gauge.POLEVA_3_SLUG,
             AmmoTypes_1.Ammo9x19.PSO_GZH,
             AmmoTypes_1.Ammo556x45.MK255_MOD_0_RRLP,
+            AmmoTypes_1.Ammo366TKM.FMJ
         ];
         const boxAmmo = [
-            "5737273924597765dd374461",
-            "57372e4a24597768553071c2",
-            "64acea2c03378853630da53e" // 7.62x39 HP x20
+            "573724b42459776125652ac2",
+            "57372ebf2459776862260582",
+            "64acea2c03378853630da53e",
+            "64aceac0c4eda9354b0226b3" // 7.62x54R FMJ x20
         ];
         for (const ammo of looseAmmo) {
             const roll = (0, crypto_1.randomInt)(1, 5);
             const count = roll <= 3 ? (0, crypto_1.randomInt)(60, 121) : (0, crypto_1.randomInt)(30, 61);
-            fluentTraderAssortHeper.createSingleAssortItem(ammo)
+            fluentTraderAssortHelper.createSingleAssortItem(ammo)
                 .addStackCount(count)
                 .addMoneyCost(Money_1.Money.ROUBLES, itemHelper.getItemPrice(ammo))
                 .addLoyaltyLevel(1)
@@ -84,9 +85,180 @@ class TraderHelper {
         }
         for (const box of boxAmmo) {
             const count = (0, crypto_1.randomInt)(2, 6);
-            fluentTraderAssortHeper.createSingleAssortItem(box)
+            fluentTraderAssortHelper.createSingleAssortItem(box)
                 .addStackCount(count)
                 .addMoneyCost(Money_1.Money.ROUBLES, itemHelper.getItemPrice(box))
+                .addLoyaltyLevel(1)
+                .export(tables.traders[traderDetailsToAdd._id]);
+        }
+        // Weapons
+        const weapons = [];
+        // Shotguns
+        //MP-43-1C Double Barrel
+        const mp431cId = "scavHideoutMp431C";
+        const mp431c = [
+            {
+                _id: mp431cId,
+                _tpl: WeaponTypes_1.Weapons12Gauge.MP_43_1C,
+                parentId: "hideout", slotId: "hideout"
+            },
+            { _id: `${mp431cId}Barrel`, _tpl: "55d447bb4bdc2d892f8b456f", parentId: mp431cId, slotId: "mod_barrel" },
+            { _id: `${mp431cId}Stock`, _tpl: "611a31ce5b7ffe001b4649d1", parentId: mp431cId, slotId: "mod_stock" }
+        ];
+        weapons.push(mp431c);
+        //MP-133 Pump Action
+        const mp133Id = "scavHideoutMp113";
+        const mp133 = [
+            {
+                _id: mp133Id,
+                _tpl: WeaponTypes_1.Weapons12Gauge.MP_133,
+                parentId: "hideout", slotId: "hideout"
+            },
+            { _id: `${mp133Id}Barrel`, _tpl: "55d4491a4bdc2d882f8b456e", parentId: mp133Id, slotId: "mod_barrel" },
+            { _id: `${mp133Id}Forestock`, _tpl: "55d45d3f4bdc2d972f8b456c", parentId: mp133Id, slotId: "mod_handguard" },
+            { _id: `${mp133Id}Magazine`, _tpl: "55d484b44bdc2d1d4e8b456d", parentId: mp133Id, slotId: "mod_magazine" },
+            { _id: `${mp133Id}Stock`, _tpl: "56083cba4bdc2de22e8b456f", parentId: mp133Id, slotId: "mod_stock" }
+        ];
+        weapons.push(mp133);
+        //TOZ-106 20ga
+        const toz106id = "scavHideoutToz106";
+        const toz106 = [
+            {
+                _id: toz106id,
+                _tpl: WeaponTypes_1.Weapons20Gauge.TOZ_106,
+                parentId: "hideout", slotId: "hideout"
+            },
+            { _id: `${toz106id}Barrel`, _tpl: "55d4491a4bdc2d882f8b456e", parentId: toz106id, slotId: "mod_barrel" },
+            { _id: `${toz106id}Magazine`, _tpl: "5a38ee51c4a282000c5a955c", parentId: toz106id, slotId: "mod_magazine" },
+            { _id: `${toz106id}PistolGrip`, _tpl: "5a38eecdc4a282329a73b512", parentId: `${toz106id}Stock`, slotId: "mod_pistol_grip" },
+            { _id: `${toz106id}Stock`, _tpl: "5a38ef1fc4a282000b1521f6", parentId: toz106id, slotId: "mod_stock" }
+        ];
+        weapons.push(toz106);
+        // Car-beans
+        // VPO-209 .366
+        const vpo209id = "scavHideoutVpo209";
+        const vpo209 = [
+            {
+                _id: vpo209id,
+                _tpl: WeaponTypes_1.Weapons366TKM.VPO_209,
+                parentId: "hideout", slotId: "hideout"
+            },
+            { _id: `${vpo209id}GasBlock`, _tpl: "59e649f986f77411d949b246", parentId: vpo209id, slotId: "mod_gas_block" },
+            { _id: `${vpo209id}HandGuard`, _tpl: "59e898ee86f77427614bd225", parentId: `${vpo209id}GasBlock`, slotId: "mod_handguard" },
+            { _id: `${vpo209id}Muzzle`, _tpl: "59e8a00d86f7742ad93b569c", parentId: vpo209id, slotId: "mod_muzzle" },
+            { _id: `${vpo209id}PistolGrip`, _tpl: "59e6318286f77444dd62c4cc", parentId: vpo209id, slotId: "mod_pistol_grip" },
+            { _id: `${vpo209id}Receiver`, _tpl: "59e6449086f7746c9f75e822", parentId: vpo209id, slotId: "mod_reciever" },
+            { _id: `${vpo209id}SightRear`, _tpl: "59e8977386f77415a553c453", parentId: vpo209id, slotId: "mod_sight_rear" },
+            { _id: `${vpo209id}Magazine`, _tpl: "5b1fd4e35acfc40018633c39", parentId: vpo209id, slotId: "mod_magazine" },
+            { _id: `${vpo209id}Stock`, _tpl: "59e89d0986f77427600d226e", parentId: vpo209id, slotId: "mod_stock" }
+        ];
+        weapons.push(vpo209);
+        // VPO-136 Vepr-KM 7.62x39
+        const vpo136id = "scavHideoutVpo136";
+        const vpo136 = [
+            {
+                _id: vpo136id,
+                _tpl: WeaponTypes_1.Weapons762x39.VPO_136,
+                parentId: "hideout", slotId: "hideout"
+            }
+        ];
+        weapons.push(vpo136);
+        // SMGeez
+        // Saiga-9 9x19
+        const saiga9id = "scavHideoutSaiga9";
+        const saiga9 = [
+            {
+                _id: saiga9id,
+                _tpl: WeaponTypes_1.Weapons9x19.SAIGA_9,
+                parentId: "hideout", slotId: "hideout"
+            },
+            { _id: `${saiga9id}PistolGrip`, _tpl: "5998517986f7746017232f7e", parentId: saiga9id, slotId: "mod_pistol_grip" },
+            { _id: `${saiga9id}Stock`, _tpl: "599851db86f77467372f0a18", parentId: saiga9id, slotId: "mod_stock" },
+            { _id: `${saiga9id}Magazine`, _tpl: "5998529a86f774647f44f421", parentId: saiga9id, slotId: "mod_magazine" },
+            { _id: `${saiga9id}Muzzle`, _tpl: "5998598e86f7740b3f498a86", parentId: saiga9id, slotId: "mod_muzzle" },
+            { _id: `${saiga9id}Receiver`, _tpl: "59985a8086f77414ec448d1a", parentId: saiga9id, slotId: "mod_reciever" },
+            { _id: `${saiga9id}SightRear`, _tpl: "599860e986f7743bb57573a6", parentId: saiga9id, slotId: "mod_sight_rear" },
+            { _id: `${saiga9id}GasBlock`, _tpl: "59ccd11386f77428f24a488f", parentId: saiga9id, slotId: "mod_gas_block" },
+            { _id: `${saiga9id}HandGuard`, _tpl: "5648b1504bdc2d9d488b4584", parentId: `${saiga9id}GasBlock`, slotId: "mod_handguard" }
+        ];
+        weapons.push(saiga9);
+        // Bolt Action
+        // Mosin (Infantry)
+        const mosinId = "scavHideoutMosin";
+        const mosin = [
+            {
+                _id: mosinId,
+                _tpl: WeaponTypes_1.Weapons762x54R.MOSIN_INFANTRY,
+                parentId: "hideout", slotId: "hideout"
+            },
+            { _id: `${mosinId}Magazine`, _tpl: "5ae0973a5acfc4001562206c", parentId: mosinId, slotId: "mod_magazine" },
+            { _id: `${mosinId}Stock`, _tpl: "5bfd35380db83400232fe5cc", parentId: mosinId, slotId: "mod_stock" },
+            { _id: `${mosinId}Barrel`, _tpl: "5ae09bff5acfc4001562219d", parentId: mosinId, slotId: "mod_barrel" },
+            { _id: `${mosinId}SightFront`, _tpl: "5ae099875acfc4001714e593", parentId: `${mosinId}Barrel`, slotId: "mod_sight_front" },
+            { _id: `${mosinId}SightRear`, _tpl: "5ae099925acfc4001a5fc7b3", parentId: `${mosinId}Barrel`, slotId: "mod_sight_rear" }
+        ];
+        weapons.push(mosin);
+        // Pistols
+        // Makarov PM 9x18
+        const makarovId = "scavHideoutMakarov";
+        const makarov = [
+            {
+                _id: makarovId,
+                _tpl: WeaponTypes_1.Weapons9x18.PM,
+                parentId: "hideout", slotId: "hideout"
+            },
+            { _id: `${makarovId}Magazine`, _tpl: "5448c12b4bdc2d02308b456f", parentId: makarovId, slotId: "mod_magazine" },
+            { _id: `${makarovId}Receiver`, _tpl: "6374a822e629013b9c0645c8", parentId: makarovId, slotId: "mod_reciever" },
+            { _id: `${makarovId}SightRear`, _tpl: "63c6adcfb4ba094317063742", parentId: `${makarovId}Receiver`, slotId: "mod_sight_rear" },
+            { _id: `${makarovId}PistolGrip`, _tpl: "6374a7e7417239a7bf00f042", parentId: makarovId, slotId: "pistol_grip" }
+        ];
+        weapons.push(makarov);
+        for (const weapon of weapons) {
+            fluentTraderAssortHelper.createComplexAssortItem(weapon)
+                .addStackCount((0, crypto_1.randomInt)(1, 3))
+                .addMoneyCost(Money_1.Money.ROUBLES, itemHelper.getItemPrice(weapon[0]._tpl))
+                .setWeaponDurability()
+                .addLoyaltyLevel(1)
+                .export(tables.traders[traderDetailsToAdd._id]);
+        }
+        // Armor
+        const armors = [];
+        // Vests
+        // Kora-Kulon Camo lv. 3
+        const koraKulon = {
+            _id: "scavHideoutKoraKulon",
+            _tpl: "64be79e2bf8412471d0d9bcc",
+            parentId: "hideout", slotId: "hideout"
+        };
+        armors.push(koraKulon);
+        // BNTI Module-3M lv. 2
+        const bnti3m = {
+            _id: "scavHideoutBnti3M",
+            _tpl: "59e7635f86f7742cbf2c1095",
+            parentId: "hideout", slotId: "hideout"
+        };
+        armors.push(bnti3m);
+        for (const armor of armors) {
+            fluentTraderAssortHelper.createSingleAssortItem(armor._tpl)
+                .addStackCount((0, crypto_1.randomInt)(1, 3))
+                .addMoneyCost(Money_1.Money.ROUBLES, itemHelper.getItemPrice(armor._tpl))
+                .setArmorDurability()
+                .addLoyaltyLevel(1)
+                .export(tables.traders[traderDetailsToAdd._id]);
+        }
+        // Other Gear
+        const gear = [
+            "5e4abfed86f77406a2713cf7",
+            "572b7adb24597762ae139821",
+            "59e7711e86f7746cae05fbe1",
+            "57513f07245977207e26a311",
+            "57347d9c245977448b40fa85",
+            "62a09f32621468534a797acb" // BEER!!!
+        ];
+        for (const item of gear) {
+            fluentTraderAssortHelper.createSingleAssortItem(item)
+                .addStackCount((0, crypto_1.randomInt)(1, 5))
+                .addMoneyCost(Money_1.Money.ROUBLES, itemHelper.getItemPrice(item))
                 .addLoyaltyLevel(1)
                 .export(tables.traders[traderDetailsToAdd._id]);
         }
@@ -107,36 +279,6 @@ class TraderHelper {
         delete insuranceConfig.insuranceMultiplier[traderId];
         delete insuranceConfig.returnChancePercent[traderId];
     }
-    generateWeaponsAndAddToAssort(assort, modConfig, botHelper, jsonUtil, botWeaponGenerator, itemHelper) {
-        // Generate scav weapons
-        const { primaryCount } = modConfig.assort.weapons;
-        const scavJsonTemplate = jsonUtil.clone(botHelper.getBotTemplate("assault"));
-        scavJsonTemplate.inventory.mods = {};
-        for (let i = 0; i < primaryCount; i++) {
-            const randWpnTpl = botWeaponGenerator.pickWeightedWeaponTplFromPool(EquipmentSlots_1.EquipmentSlots.FIRST_PRIMARY_WEAPON, scavJsonTemplate.inventory);
-            const generatedWpn = botWeaponGenerator.generateWeaponByTpl(null, randWpnTpl, "hideout", scavJsonTemplate.inventory, "hideout", scavJsonTemplate.chances.mods, "assault", false, 1);
-            let wpnId;
-            let price;
-            // Set count & add to item assort
-            for (const item of generatedWpn.weapon) {
-                if (item._tpl === randWpnTpl) // Weapon base item
-                 {
-                    wpnId = item._id;
-                    item.upd.StackObjectsCount = 1;
-                    item.upd.UnlimitedCount = false;
-                    price = itemHelper.getItemPrice(item._tpl);
-                    const qualityModifier = itemHelper.getItemQualityModifier(item);
-                    price *= qualityModifier;
-                }
-                assort.items.push(item);
-            }
-            // Add price to barter assort
-            assort.barter_scheme[wpnId] = [[{ _tpl: Money_1.Money.ROUBLES, count: price }]];
-            // Assign LL
-            assort.loyal_level_items[wpnId] = 1;
-            console.log(generatedWpn.weapon, assort.barter_scheme[generatedWpn.weaponTemplate._id]);
-        }
-    }
     /**
      * Create basic data for trader + add empty assorts table for trader
      * @param tables SPT db
@@ -145,69 +287,6 @@ class TraderHelper {
      */
     createAssortTable() {
         return { ...assort_json_1.default, nextResupply: 0 };
-    }
-    /**
-     * Create a weapon from scratch, ready to be added to trader
-     * @returns Item[]
-     */
-    createGlock() {
-        // Create an array ready to hold weapon + all mods
-        const glock = [];
-        // Add the base first
-        glock.push({
-            _id: "glockBase",
-            _tpl: "5a7ae0c351dfba0017554310" // This is the weapons tpl, found on: https://db.sp-tarkov.com/search
-        });
-        // Add barrel
-        glock.push({
-            _id: "glockbarrel",
-            _tpl: "5a6b60158dc32e000a31138b",
-            parentId: "glockBase",
-            slotId: "mod_barrel" // Required for mods, you need to define what 'role' they have
-        });
-        // Add reciever
-        glock.push({
-            _id: "glockReciever",
-            _tpl: "5a9685b1a2750c0032157104",
-            parentId: "glockBase",
-            slotId: "mod_reciever"
-        });
-        // Add compensator
-        glock.push({
-            _id: "glockCompensator",
-            _tpl: "5a7b32a2e899ef00135e345a",
-            parentId: "glockReciever",
-            slotId: "mod_muzzle"
-        });
-        // Add Pistol grip
-        glock.push({
-            _id: "glockPistolGrip",
-            _tpl: "5a7b4960e899ef197b331a2d",
-            parentId: "glockBase",
-            slotId: "mod_pistol_grip"
-        });
-        // Add front sight
-        glock.push({
-            _id: "glockRearSight",
-            _tpl: "5a6f5d528dc32e00094b97d9",
-            parentId: "glockReciever",
-            slotId: "mod_sight_rear"
-        });
-        // Add rear sight
-        glock.push({
-            _id: "glockFrontSight",
-            _tpl: "5a6f58f68dc32e000a311390",
-            parentId: "glockReciever",
-            slotId: "mod_sight_front"
-        });
-        // Add magazine
-        glock.push({
-            _id: "glockMagazine",
-            _tpl: "630769c4962d0247b029dc60",
-            parentId: "glockBase",
-            slotId: "mod_magazine"
-        });
-        return glock;
     }
     /**
      * Add traders name/location/description to the locale table
@@ -219,7 +298,7 @@ class TraderHelper {
      * @param location Location of trader (e.g. "Here in the cat shop")
      * @param description Description of trader
      */
-    addTraderToLocales(baseJson, tables, description, jsonUtil) {
+    addTraderToLocales(baseJson, tables, description) {
         // For each language, add locale for the new trader
         const locales = Object.values(tables.locales.global);
         for (const locale of locales) {
@@ -232,64 +311,6 @@ class TraderHelper {
                 locale[key] = str;
             });
         }
-    }
-    extendGetPristineTraderAssort(thisTraderId, defaultService, modConfig, botWeaponGenerator, jsonUtil, botHelper, logger) {
-        return (traderId) => {
-            if (traderId !== thisTraderId) // Use existing registered logic for other traders
-             {
-                return defaultService.getPristineTraderAssort(traderId);
-            }
-            else {
-                // Get non-generated assort
-                const assort = { ...defaultService.getPristineTraderAssort(traderId) };
-                // Generate scav weapons
-                const { primaryCount, pistolCount } = modConfig.assort.weapons;
-                const scavJsonTemplate = jsonUtil.clone(botHelper.getBotTemplate("assault"));
-                scavJsonTemplate.inventory.mods = {}; // Don't generate mods
-                const templateInventory = scavJsonTemplate.inventory;
-                for (let i = 0; i < primaryCount; i++) {
-                    const randWpnTpl = botWeaponGenerator.pickWeightedWeaponTplFromPool(EquipmentSlots_1.EquipmentSlots.FIRST_PRIMARY_WEAPON, templateInventory);
-                    const generatedWpn = botWeaponGenerator.generateWeaponByTpl(null, randWpnTpl, "hideout", templateInventory, "hideout", {
-                        /* eslint-disable @typescript-eslint/naming-convention */
-                        mod_charge: 0,
-                        mod_equipment: 0,
-                        mod_equipment_000: 0,
-                        mod_equipment_001: 0,
-                        mod_equipment_002: 0,
-                        mod_flashlight: 0,
-                        mod_foregrip: 0,
-                        mod_launcher: 0,
-                        mod_magazine: 0,
-                        mod_mount: 0,
-                        mod_mount_000: 0,
-                        mod_mount_001: 0,
-                        mod_muzzle: 0,
-                        mod_nvg: 0,
-                        mod_pistol_grip: 0,
-                        mod_reciever: 0,
-                        mod_scope: 0,
-                        mod_scope_000: 0,
-                        mod_scope_001: 0,
-                        mod_scope_002: 0,
-                        mod_scope_003: 0,
-                        mod_sight_front: 0,
-                        mod_sight_rear: 0,
-                        mod_stock: 0,
-                        mod_stock_000: 0,
-                        mod_stock_akms: 0,
-                        mod_tactical: 0,
-                        mod_tactical_000: 0,
-                        mod_tactical_001: 0,
-                        mod_tactical_002: 0,
-                        mod_tactical_003: 0,
-                        mod_handguard: 0
-                        /* eslint-enable @typescript-eslint/naming-convention */
-                    }, "assault", false, 1);
-                    assort.items.push(generatedWpn.weapon[0]);
-                }
-                return assort;
-            }
-        };
     }
 }
 exports.TraderHelper = TraderHelper;
