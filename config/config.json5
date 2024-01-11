@@ -8,6 +8,11 @@
     insuranceMultiplier: 0.12, // Determines base cost of insurance: Item price * insurance multiplier = base cost
     returnChancePercent: 69, // Chance for an insured item to come back
   },
-  refreshTimeSeconds: 15, // Trader refresh time
+  refreshTimeSeconds: 3600, // Trader refresh time
   traderStockPriceMultiplier: 1.25, // used for items trader is selling, e.g. base price * 1.25
+  assort: {
+    weapons: {
+      primaryCount: 5
+    }
+  }
 }

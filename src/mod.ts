@@ -2,8 +2,6 @@ import { DependencyContainer, Lifecycle } from "tsyringe";
 import JSON5 from "json5";
 import path from "path";
 import { ScavHideoutConfig } from "./types";
-
-// SPT types
 import { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
 import { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
 import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
@@ -21,8 +19,6 @@ import { TradeController } from "@spt-aki/controllers/TradeController";
 import { IItemEventRouterResponse } from "@spt-aki/models/eft/itemEvent/IItemEventRouterResponse";
 import { IProcessBaseTradeRequestData } from "@spt-aki/models/eft/trade/IProcessBaseTradeRequestData";
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
-
-// New trader settings
 import * as baseJson from "../db/base.json";
 import { TraderHelper } from "./traderHelpers";
 import { FluentAssortConstructor } from "./fluentTraderAssortCreator";
@@ -34,6 +30,9 @@ import { TradeHelper } from "@spt-aki/helpers/TradeHelper";
 import { IProcessSellTradeRequestData } from "@spt-aki/models/eft/trade/IProcessSellTradeRequestData";
 import { TraderAssortHelper } from "@spt-aki/helpers/TraderAssortHelper";
 import { Upd } from "@spt-aki/models/eft/common/tables/IItem";
+import { BotHelper } from "@spt-aki/helpers/BotHelper";
+import { BotWeaponGenerator } from "@spt-aki/generators/BotWeaponGenerator";
+import { CustomTraderAssortService } from "./CustomTraderAssortService";
 
 // Global trader ID, defined in base.json
 const traderId = baseJson._id;
@@ -122,7 +121,6 @@ class ScavHideoutMod implements IPreAkiLoadMod, IPostDBLoadMod
             // The modifier Always makes sure this replacement method is ALWAYS replaced
         }, {frequency: "Always"});
 
-
         this.logger.debug(`[${this.mod}] preAki Loaded`);            
     }
     
@@ -139,6 +137,8 @@ class ScavHideoutMod implements IPreAkiLoadMod, IPostDBLoadMod
         const configServer: ConfigServer = container.resolve<ConfigServer>("ConfigServer");
         const jsonUtil: JsonUtil = container.resolve<JsonUtil>("JsonUtil");
         const itemHelper = container.resolve<ItemHelper>("ItemHelper");
+        const botHelper = container.resolve<BotHelper>("BotHelper");
+        const botWeaponGenerator = container.resolve<BotWeaponGenerator>("BotWeaponGenerator");
 
         // Get a reference to the database tables
         const tables = databaseServer.getTables();
@@ -149,10 +149,32 @@ class ScavHideoutMod implements IPreAkiLoadMod, IPostDBLoadMod
             tables, 
             jsonUtil, 
             itemHelper, 
-            this.fluentTraderAssortHelper
+            this.fluentTraderAssortHelper,
+            modConfig,
+            botHelper,
+            botWeaponGenerator
         );
 
-        this.logger.debug(`[${this.mod}] registering custom getPristineTraderAssort for trader refresh logic...`);
+        /**
+        // Replace trader assort service with custom & reinitialize
+        container.register("CustomTraderAssortService", { useValue: 
+            new CustomTraderAssortService(traderId, modConfig, botHelper, jsonUtil, botWeaponGenerator, itemHelper)
+        });
+        container.register("TraderAssortService", { useToken: "CustomTraderAssortService" });
+        const traderAssortService = container.resolve<CustomTraderAssortService>("TraderAssortService");
+        
+        for (const _traderId in tables.traders)
+        {
+            if (_traderId === "ragfair" || _traderId === Traders.LIGHTHOUSEKEEPER || _traderId === Traders.FENCE) continue;
+            
+            const trader = databaseServer.getTables().traders[_traderId];
+            if (_traderId !== traderId && !traderAssortService.getPristineTraderAssort(traderId))
+            {
+                const assorts = jsonUtil.clone(trader.assort);
+                traderAssortService.setPristineTraderAssort(traderId, assorts);
+            }
+        }
+         */
 
         // Add new trader's insurance details to insurance config
         if (baseJson.insurance.availability) 

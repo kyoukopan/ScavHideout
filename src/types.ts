@@ -8,6 +8,13 @@ export interface ScavHideoutConfig {
     };
     /** Trader refresh time */
     refreshTimeSeconds: number;
+    /** Trader stock settings */
+    assort: {
+        weapons: {
+            /** Amount of primary weapons to generate */
+            primaryCount: number;
+        }
+    };
     /** Trader prices = item price * this multiplier (used for items trader is selling) */
     traderStockPriceMultiplier: number;
 }

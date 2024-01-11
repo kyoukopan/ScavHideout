@@ -29,12 +29,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const json5_1 = __importDefault(require("C:/snapshot/project/node_modules/json5"));
 const path_1 = __importDefault(require("path"));
 const ConfigTypes_1 = require("C:/snapshot/project/obj/models/enums/ConfigTypes");
-// New trader settings
 const baseJson = __importStar(require("../db/base.json"));
 const traderHelpers_1 = require("./traderHelpers");
 const fluentTraderAssortCreator_1 = require("./fluentTraderAssortCreator");
 const Traders_1 = require("C:/snapshot/project/obj/models/enums/Traders");
 const fs_1 = require("fs");
+const CustomTraderAssortService_1 = require("./CustomTraderAssortService");
 // Global trader ID, defined in base.json
 const traderId = baseJson._id;
 const configJson5 = (0, fs_1.readFileSync)(path_1.default.resolve(__dirname, "../config/config.json5"), { encoding: "utf-8" });
@@ -114,11 +114,26 @@ class ScavHideoutMod {
         const configServer = container.resolve("ConfigServer");
         const jsonUtil = container.resolve("JsonUtil");
         const itemHelper = container.resolve("ItemHelper");
+        const botHelper = container.resolve("BotHelper");
+        const botWeaponGenerator = container.resolve("BotWeaponGenerator");
         // Get a reference to the database tables
         const tables = databaseServer.getTables();
         // Add new trader to the trader dictionary in DatabaseServer w/ assort
-        this.traderHelper.addTraderToDb(baseJson, tables, jsonUtil, itemHelper, this.fluentTraderAssortHelper);
-        this.logger.debug(`[${this.mod}] registering custom getPristineTraderAssort for trader refresh logic...`);
+        this.traderHelper.addTraderToDb(baseJson, tables, jsonUtil, itemHelper, this.fluentTraderAssortHelper, modConfig, botHelper, botWeaponGenerator);
+        // Replace trader assort service with custom & reinitialize
+        container.register("CustomTraderAssortService", { useValue: new CustomTraderAssortService_1.CustomTraderAssortService(traderId, modConfig, botHelper, jsonUtil, botWeaponGenerator, itemHelper)
+        });
+        container.register("TraderAssortService", { useToken: "CustomTraderAssortService" });
+        const traderAssortService = container.resolve("TraderAssortService");
+        for (const _traderId in tables.traders) {
+            if (_traderId === "ragfair" || _traderId === Traders_1.Traders.LIGHTHOUSEKEEPER || _traderId === Traders_1.Traders.FENCE)
+                continue;
+            const trader = databaseServer.getTables().traders[_traderId];
+            if (_traderId !== traderId && !traderAssortService.getPristineTraderAssort(traderId)) {
+                const assorts = jsonUtil.clone(trader.assort);
+                traderAssortService.setPristineTraderAssort(traderId, assorts);
+            }
+        }
         // Add new trader's insurance details to insurance config
         if (baseJson.insurance.availability) {
             this.traderHelper.addTraderInsuranceConfig({

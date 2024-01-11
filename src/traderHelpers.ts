@@ -17,6 +17,10 @@ import { FluentAssortConstructor } from "./fluentTraderAssortCreator";
 import { Ammo12Gauge, Ammo20Gauge, Ammo366TKM, Ammo556x45, Ammo9x19 } from "@spt-aki/models/enums/AmmoTypes";
 import { Weapons12Gauge, Weapons20Gauge, Weapons366TKM, Weapons762x39, Weapons762x54R, Weapons9x18, Weapons9x19 } from "@spt-aki/models/enums/WeaponTypes";
 import { randomInt } from "crypto";
+import { ScavHideoutConfig } from "./types";
+import { BotHelper } from "@spt-aki/helpers/BotHelper";
+import { BotWeaponGenerator } from "@spt-aki/generators/BotWeaponGenerator";
+import { EquipmentSlots } from "@spt-aki/models/enums/EquipmentSlots";
 
 export class TraderHelper
 {
@@ -65,7 +69,10 @@ export class TraderHelper
         tables: IDatabaseTables, 
         jsonUtil: JsonUtil, 
         itemHelper: ItemHelper, 
-        fluentTraderAssortHelper: FluentAssortConstructor
+        fluentTraderAssortHelper: FluentAssortConstructor,
+        modConfig: ScavHideoutConfig,
+        botHelper: BotHelper,
+        botWeaponGenerator: BotWeaponGenerator
     ): void
     {
         // Add trader to trader table, key is the traders id
@@ -79,6 +86,8 @@ export class TraderHelper
             }, // questassort is empty as trader has no assorts unlocked by quests
             dialogue: dialogueJson
         };
+
+        this.generateWeaponsAndAddToAssort(tables.traders[traderDetailsToAdd._id].assort, modConfig, botHelper, jsonUtil, botWeaponGenerator, itemHelper);
 
         const looseAmmo = [
             Ammo12Gauge.BUCKSHOT_7MM,
@@ -118,6 +127,7 @@ export class TraderHelper
                 .export(tables.traders[traderDetailsToAdd._id]);
         }
         
+        /**
         // Weapons
         const weapons: Item[][] = [];
         
@@ -258,6 +268,7 @@ export class TraderHelper
                 .addLoyaltyLevel(1)
                 .export(tables.traders[traderDetailsToAdd._id]);
         }
+        **/
 
         // Armor
         const armors: Item[] = [];
@@ -309,6 +320,60 @@ export class TraderHelper
         }
     }
 
+    public generateWeaponsAndAddToAssort(
+        assort: ITraderAssort, 
+        modConfig: ScavHideoutConfig, 
+        botHelper: BotHelper, 
+        jsonUtil: JsonUtil, 
+        botWeaponGenerator: BotWeaponGenerator,
+        itemHelper: ItemHelper
+    ): void
+    {
+        console.log(" ==== GENERATING WEAPONS ==== ");
+        // Generate scav weapons
+        const { primaryCount } = modConfig.assort.weapons;
+        const scavJsonTemplate = jsonUtil.clone(botHelper.getBotTemplate("assault"));
+        scavJsonTemplate.inventory.mods = {};
+        for (let i = 0; i < primaryCount; i++)
+        {
+            const randWpnTpl = botWeaponGenerator.pickWeightedWeaponTplFromPool(EquipmentSlots.FIRST_PRIMARY_WEAPON, scavJsonTemplate.inventory);
+            const generatedWpn = botWeaponGenerator.generateWeaponByTpl(
+                null,
+                randWpnTpl,
+                "hideout",
+                scavJsonTemplate.inventory,
+                "hideout",
+                scavJsonTemplate.chances.mods,
+                "assault",
+                false,
+                1
+            )
+
+            let wpnId: string;
+            let price: number;
+            // Set count & add to item assort
+            for (const item of generatedWpn.weapon)
+            {
+                if (item._tpl === randWpnTpl) // Weapon base item
+                {
+                    wpnId = item._id;
+                    item.upd.StackObjectsCount = 1;
+                    item.upd.UnlimitedCount = false;
+                    price = itemHelper.getItemPrice(item._tpl);
+                    const qualityModifier = itemHelper.getItemQualityModifier(item);
+                    price *= qualityModifier;
+                }
+                assort.items.push(item);
+            }
+
+            // Add price to barter assort
+            assort.barter_scheme[wpnId] = [[{ _tpl: Money.ROUBLES, count: price }]];
+            
+            // Assign LL
+            assort.loyal_level_items[wpnId] = 1;
+        }
+    }
+
     /**
      * Adds trader's insurance details to the config server's insurance config
      */
@@ -341,7 +406,7 @@ export class TraderHelper
      * @param jsonUtil SPT JSON utility class
      * @returns ITraderAssort
      */
-    private createAssortTable(): ITraderAssort
+    public createAssortTable(): ITraderAssort
     {
         return { ...assort, nextResupply: 0 };
     }
